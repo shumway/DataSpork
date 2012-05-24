@@ -1,0 +1,20 @@
+<body>
+Plotting classes for the dataspork packages.
+This package is built on the Java2D graphics classes.
+The classes are divided into three types:
+<ol>
+<li>The <code>PlotPanel</code> class holds the plot.</li>
+<li>PlotElements</li> are any objects that make up the plot,
+such as axes, xy-functions, and data labels.  Also, this is a base class
+of <code>PlotBox</code>, described next.
+<li><code>PlotBox</code> and the <code>Plot</code> subclass are special
+<code>PlotElements</code> that are containers.  These form the tree nodes, and
+<code>Plot</code> forms the base of the tree, which fits into the 
+<code>PlotPanel</code>
+</ol>
+</p><p>
+In addition to these classes, there is a class <code>CoordSys</code>
+which serves to represent a local coordinate system, defined by
+an affine tranformation and a coordinate range.
+</p>
+</body>

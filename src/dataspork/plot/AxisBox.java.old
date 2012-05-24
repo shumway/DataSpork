@@ -1,0 +1,88 @@
+/*
+ *
+ *
+ */
+package analyzer.plot;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class AxisBox extends PlotElement {
+
+  protected double bigTicksX, bigTicksY;
+  protected int ticksize;
+  protected int xLabelWidth;
+  protected int yLabelWidth;
+
+  public AxisBox() {super(); init();}
+  public AxisBox(PlotElement next) {super(next); init();}
+
+  protected void init() {
+    ticksize=5;
+    xLabelWidth=25;
+    yLabelWidth=25;
+  }
+
+  public void paint(Graphics g) {
+    FontMetrics f_metrics = g.getFontMetrics();
+    PlotDim pd = getPlotDim(this);
+    autoSetTicks(pd.deltax(),pd.deltay());
+
+    // Save old color settings.
+    Color old_color = g.getColor();
+
+    // Plot the axis and box
+    g.setColor(Color.black);
+    g.drawRect(pd.mini(),pd.minj(),pd.width(),pd.height());
+
+    // Draw the x axis and ticks
+    double x = Math.ceil(pd.minx()/bigTicksX)*bigTicksX;
+    while (x < pd.xmax) {
+      int i = pd.i(x);
+      g.drawLine(i, pd.maxj(), i, pd.maxj()-ticksize);
+      // Draw the x axis labels.
+      String label;
+      label = (bigTicksX > 0.99d && bigTicksX < 100001d)  ?
+        String.valueOf((int)x) : String.valueOf((float)x);
+      if (label.equals("-0.0")) label="0.0";
+      int width=f_metrics.charsWidth(label.toCharArray(),0,label.length());
+      int height=f_metrics.getHeight();
+      g.drawString(label,i-width/2,pd.jmin+(xLabelWidth+height)/2);
+      x+=bigTicksX;
+    }
+
+
+    // Draw the y axis and ticks
+    double y = Math.ceil(pd.miny()/bigTicksY)*bigTicksY;
+    while (y < pd.ymax) {
+      int j = pd.j(y);
+      g.drawLine(pd.mini(), j, pd.mini()+ticksize, j);
+      // Draw the y axis labels.
+      String label;
+      label = (bigTicksY > 0.99d && bigTicksY < 100001d)  ?
+        String.valueOf((int)y) : String.valueOf((float)y);
+      if (label.equals("-0.0")) label="0.0";
+      int width=f_metrics.charsWidth(label.toCharArray(),0,label.length());
+      int height=f_metrics.getHeight();
+      g.drawString(label,pd.imin-(yLabelWidth+width)/2,j+height/2);
+      y+=bigTicksY;
+    }
+
+    // Restore the clip and color settings.
+    g.setColor(old_color);
+    super.paint(g);
+  }
+  
+  protected void autoSetTicks(double deltax, double deltay) {
+    //Automatically set bigTicksX and bigTicksY.
+    double log10inv=1d/Math.log(10d);
+    bigTicksX = Math.pow(10,Math.floor(Math.log(deltax)*log10inv));
+    if ((deltax)/bigTicksX>7d) bigTicksX*=2d;
+    if ((deltax)/bigTicksX<3d) bigTicksX/=2d;
+    bigTicksY = Math.pow(10,Math.floor(Math.log(deltay)*log10inv));
+    if ((deltay)/bigTicksY>7d) bigTicksY*=2d;
+    if ((deltay)/bigTicksY<3d) bigTicksY/=2d;
+  }
+
+}

@@ -1,0 +1,31 @@
+This file assumes that the program DataSpork is in the directory
+/afs/ncsa.uiuc.edu/projects/qmc2/DataSpork.  
+
+To use DataSpork on modi4, you need to do the following:
+
+1.  Put java 1.2 in your path.  On modi4, this would be:
+
+set path=(/usr/local/java1.2/usr/java/bin $path)  # defaults to new java 1.2 now
+
+(make sure that the java 1.2 directory is first, to supercede any java's
+that may be in /usr/local/bin or whatever.)
+
+2.  Set your CLASSPATH to include the dataspork files:
+
+setenv CLASSPATH 
+/afs/ncsa/projects/qmc2/DataSpork:/afs/ncsa/projects/qmc2/DataSpork/xml-tr2/xml.jar:.
+
+(This should all be one line, with no spaces.) 
+
+3.  Set the following environment variable:
+
+setenv LD_LIBRARYN32_PATH /afs/ncsa/projects/qmc2/java/native/IRIX-n32:/opt/mpt/mpt/usr/lib32/mips4:/opt/mpt/mpt/usr/lib32:/opt/MIPSpro/MIPSpro/usr/lib32/mips4:/opt/MIPSpro/MIPSpro/usr/lib32
+
+(Again, this should all be on one line, with no spaces between the
+directories.)  
+
+To run, type 
+  java dataspork.Main
+
+Erik Draeger
+10/20/99

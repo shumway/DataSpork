@@ -1,0 +1,57 @@
+package dataspork.reader;
+import dataspork.tree.*;
+import dataspork.interp.*;
+import java.io.*;
+import java.util.Enumeration;
+import dataspork.interp.ScalarDataset;
+import org.xml.sax.*;
+import com.sun.xml.parser.ValidatingParser;
+import com.sun.xml.parser.Resolver;
+import java.net.URL;
+
+public class XmlDataReader implements DataReader {
+
+  public XmlDataReader() {};
+
+  public DataTreeNode read(URL url) {
+System.out.println("URL = "+url);
+    DataTreeNode root=null;
+    try {
+      XmlDocHandler handler = new XmlDocHandler(url);
+      Parser parser = new ValidatingParser(true);
+      parser.setDocumentHandler(handler);
+      parser.setErrorHandler(handler);
+      InputSource input = new InputSource(url.toString());
+      //input.setSystemId(url.toString()); //set this to resolve relative URI's
+      parser.parse(input);
+      root = handler.getDataTree();
+    } catch (Throwable t) {t.printStackTrace ();}
+
+    if (root==null) {
+      root = new DataTreeNode("Test Data");
+      //VMC
+      DataTreeNode vmc = new DataTreeNode("vmc");
+      root.insert(vmc,0);
+      double en[] = {0.1,0.3, 0.2};
+      int dim[] = {3};
+      DataTreeNode energy = new DataTreeNode("energy",
+                                new ConstDataSource(en,dim,DataSource.DOUBLE));
+      energy.addInterpreter(new InterpreterClass(ScalarDataset.class,energy));
+      vmc.insert(energy,0);
+    }
+    //Move root down one level if only one group and root has default name.
+    if (root.getChildCount()==1 && root.toString().equals("index")) {
+      root=(DataTreeNode)root.getChildAt(0);
+    }
+    return root;
+  }
+
+
+  public static void main(String argv[]) throws IOException {
+    System.out.println("XmlDataReader");
+    DataReader reader = new XmlDataReader();
+    URL url = new URL("file:/afs/ncsa/projects/qmc2/shumway/java/dataspork/reader/index.xml");
+    DataTreeNode root = reader.read(url);
+    TreeWriter.printTree(root,"");
+  }
+}

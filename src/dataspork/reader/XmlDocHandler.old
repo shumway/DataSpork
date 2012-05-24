@@ -1,0 +1,108 @@
+package dataspork.reader;
+import dataspork.tree.*;
+import dataspork.interp.*;
+import java.io.*;
+import java.net.URL;
+import java.util.Enumeration;
+import dataspork.interp.ScalarDataset;
+import org.xml.sax.*;
+import com.sun.xml.parser.ValidatingParser;
+import com.sun.xml.parser.Resolver;
+import java.util.Stack;
+
+public class XmlDocHandler extends HandlerBase {
+  protected DataTreeNode currentNode;
+  protected DataTreeNode rootNode;
+  protected Stack stack;
+  protected URL urlContext;
+
+  public XmlDocHandler(URL urlContext) {
+    this.urlContext=urlContext;
+    stack=new Stack();
+  };
+
+  public DataTreeNode getDataTree() {
+    return rootNode;
+  }
+
+  public void startElement(java.lang.String name, AttributeList atts) {
+    //Save the old "currentNode" on the stack.
+    stack.push(currentNode);
+    if (name.equals("simIndex") || name.equals("simGroup")) {
+      DataTreeNode node = new DataTreeNode(atts.getValue("name"));
+      if (currentNode!=null) currentNode.add(node);
+      currentNode=node;
+      if (rootNode==null) rootNode=currentNode;
+    }
+    else if(name.equals("simRef")) {
+      String ref = atts.getValue("ref");
+      String readerName = atts.getValue("reader");
+      System.out.println("Reading file "+ref+" with reader "+readerName+".");
+      DataTreeNode node=null;
+      try { 
+        DataReader reader = (DataReader)Class.forName(readerName).newInstance();
+        node = reader.read(new URL(urlContext,ref));
+      } 
+      catch (Exception e) {
+        node = new DataTreeNode(name+" unreadable");
+      }
+      System.out.println("Finished reading file.");
+      currentNode.add(node);
+      currentNode=node;
+    }
+    else if(name.equals("sim")) {
+      String simName = atts.getValue("name");
+      DataTreeNode node = new DataTreeNode(simName);
+      currentNode.add(node);
+      currentNode=node;
+    }
+    else if(name.equals("dataGroup")) {
+      String simName = atts.getValue("name");
+      DataTreeNode node = new DataTreeNode(simName);
+      currentNode.add(node);
+      currentNode=node;
+    }
+    else if(name.equals("tensor")) {
+      String dataName = atts.getValue("name");
+      DataTreeNode node = new DataTreeNode(dataName);
+      currentNode.add(node);
+      currentNode=node;
+    }
+    else if(name.equals("asciiData")) {
+      String fileName = atts.getValue("file");
+      String colName = atts.getValue("col");
+      int col = Integer.parseInt(colName);
+      currentNode.setDataSource(new AsciiColumnSource(fileName,col));
+      double en[] = {0.1,0.3, 0.2};
+      int dim[] = {3};
+      //currentNode.setDataSource(new ConstDataSource(en,dim,DataSource.DOUBLE));
+    }
+    else if(name.equals("interpreter")) {
+      String className = atts.getValue("class");
+      try {
+         InterpreterClass interp = 
+            new InterpreterClass(Class.forName(className),currentNode);
+         currentNode.addInterpreter(interp);
+      } 
+      catch (ClassNotFoundException e) {}
+    }
+  }
+
+  public void endElement(java.lang.String name) throws SAXException {
+    currentNode = (DataTreeNode)stack.pop();
+  }
+
+  public void error(SAXParseException e) throws SAXException {
+    System.out.println("Error parsing line "+e.getLineNumber()+" of "
+                       +e.getSystemId());
+    System.out.println(e.getMessage());
+  }
+
+  public void fatalError(SAXParseException e) throws SAXException {
+    System.out.println("fatalError:"+e);
+  }
+
+  public void warning(SAXParseException e) {
+    System.out.println("warning:"+e);
+  }
+}

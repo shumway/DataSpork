@@ -1,0 +1,24 @@
+package analyzer.gui;
+import java.awt.*;
+import javax.swing.*;
+import javax.swing.border.*;
+
+public class CommonFrame extends JFrame {
+
+  protected Container contentPane;
+  protected JMenuBar menuBar;
+
+  public static final Border BORDER;
+
+  /* Define the border
+  { BORDER=new CompositeBorder(
+    )
+  }
+
+  public CommonFrame() {
+    menuBar = new JMenuBar();
+    setJMenuBar(menuBar);
+    contentPane=getContentPane();
+    setBackground(Color.white);
+  }
+}

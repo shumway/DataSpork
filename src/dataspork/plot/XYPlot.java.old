@@ -1,0 +1,41 @@
+package analyzer.plot;
+/*
+ *
+ *
+ */
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class XYPlot extends PlotElement {
+
+  public XYPlot() {super();}
+  public XYPlot(PlotElement next) {super(next);}
+
+  public void paint(Graphics g) {
+    PlotDim pd = getPlotDim(this);
+
+    // Save old clip and color settings.
+    Shape old_clip = g.getClip();
+    Color old_color = g.getColor();
+
+    // Set clip region to avoid ploting out of box.
+    g.setClip(Math.min(pd.imin,pd.imax),
+              Math.min(pd.jmin,pd.jmax),
+              Math.abs(pd.imax-pd.imin),
+              Math.abs(pd.jmax-pd.jmin));
+
+    // Plot the curve.
+    g.setColor(Color.red);
+    for (int i=pd.mini(); i<pd.maxi()-1; i++) {
+      g.drawLine(i,pd.j(Math.sin(pd.x(i))),i+1,pd.j(Math.sin(pd.x(i+1))));
+    }
+
+    // Restore the clip and color settings.
+    g.setClip(old_clip);
+    g.setColor(old_color);
+    super.paint(g);
+  }
+  
+}

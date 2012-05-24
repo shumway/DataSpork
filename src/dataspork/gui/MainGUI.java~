@@ -1,0 +1,280 @@
+package dataspork.gui;
+
+import dataspork.Main;
+//import dataspork.interp.InterpreterClass;
+//import dataspork.interp.Interpreter;
+import dataspork.interp.*;
+import dataspork.util.JMenuUtil;
+import dataspork.reader.*;
+import dataspork.tree.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.event.*;
+import javax.swing.tree.*;
+import java.awt.*;
+import java.beans.PropertyChangeListener;
+import java.awt.event.*;
+import java.util.EventObject;
+import java.util.Enumeration;
+import java.io.*;
+import java.net.URL;
+
+public class MainGUI extends CommonFrame implements ActionListener {
+
+  protected Main main;
+  protected DataTreeGUI tree;
+  protected JScrollPane treeScroller;
+  protected JFileChooser fChooser;
+  protected JTabbedPane tabbedPane;
+  protected JComboBox cbox;
+  protected ReaderIndex ri;
+  protected String[] readerNames;
+  protected String[] filterClasses;
+  protected String[] rKeyList;
+  protected String[] fKeyList;
+  protected javax.swing.filechooser.FileFilter[] fFilter;
+
+  public MainGUI(Main main) {
+    super();
+    this.main=main;
+    this.ri = main.ri;
+
+    setTitle("DataSpork");
+
+    // set up tabbed pane
+    tabbedPane = new JTabbedPane();
+
+    // Otherwise, add one empty tab as a space holder
+    DataTreeNode top = new DataTreeNode("no data loaded");
+    tree = new DataTreeGUI(top);
+    treeScroller = new JScrollPane(tree);
+    treeScroller.setPreferredSize(new Dimension(400,600));
+    treeScroller.setBorder(CommonFrame.BORDER);
+    // make the first tab
+    tabbedPane.addTab("empty",treeScroller);
+
+    contentPane.add(tabbedPane,BorderLayout.CENTER);
+
+    // set up new FileChooser
+    fChooser = new JFileChooser(".");
+    fChooser.setPreferredSize(new Dimension(500,400));
+    fChooser.setMultiSelectionEnabled(true);
+
+    readerNames = new String[ri.getNReaders()];
+    filterClasses = new String[ri.getNFilters()];
+    rKeyList = ri.getReaderKeyList();
+    fKeyList = ri.getFilterKeyList();
+    fFilter = new javax.swing.filechooser.FileFilter[ri.getNFilters()];
+
+    // get list of file filters
+    for (int i=0;i<ri.getNFilters();i++) {
+      filterClasses[i] = ri.getFilterClass(fKeyList[i]);
+      try {
+        fFilter[i] = (javax.swing.filechooser.FileFilter)Class.forName(filterClasses[i]).newInstance();
+        fChooser.addChoosableFileFilter(fFilter[i]);
+      } catch (Exception e) {
+        System.out.println("exception in MainGUI, adding filters: "+e);
+      }
+    }
+
+    // get list of data reader names
+    for (int i=0;i<ri.getNReaders();i++) {
+      readerNames[i] = ri.getReaderName(rKeyList[i]);
+    }
+
+    // set default file filter
+    fChooser.setFileFilter(fFilter[0]);
+
+    // set up list of data readers
+    cbox = new JComboBox(readerNames);
+    cbox.setEditable(false);
+    cbox.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        JComboBox cb = (JComboBox)e.getSource();
+        String rName = (String)cb.getSelectedItem();
+        String rKey = ri.getReaderNameKey(rName);
+        String fKey = ri.getReaderFilterKey(rKey);
+        for (int j=0;j<ri.getNFilters();j++) {
+          if (fKey.equals(fKeyList[j])) {
+            try {
+              fChooser.setFileFilter(fFilter[j]);
+              fChooser.updateUI();
+            } catch (Exception e2) { 
+              System.out.println("Exception in auto filter select:"+e2);
+            }
+          }
+        }
+      }
+    });
+
+    // add the reader list to the JFileChooser
+    JPanel jp = new JPanel();
+    jp.add(cbox);
+    fChooser.setAccessory(jp);
+
+    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+    addWindowListener(new WindowAdapter() {
+      public void windowClosing(WindowEvent e) {
+        actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,
+                                        "quit"));       
+      }
+    });
+
+    // Set up File menu
+    JMenuUtil.addMenu( menuBar, "File",
+             new String[] {"Open","Close","Quit"},
+             new String[] {"open","close","quit"},
+             new int[]    {KeyEvent.VK_O,KeyEvent.VK_C,KeyEvent.VK_Q},
+             this
+    );
+
+    // Set up Dataset menu
+    JMenuUtil.addMenu( menuBar, "Datasets",
+        new String[] {},
+        new String[] {},
+        new int[]    {},
+        this
+    );
+
+    // If there was an index.xml file, add those nodes to tabs
+
+    // get file names and reader names from Main
+    String[] fileList = main.fileList;
+    String[] readerList = main.readerList;
+    int[] groupList = main.groupList;
+
+    String currentReader = null;
+
+    // find the number of groups
+    int nGroups = 0;
+    for (int i=0; i<groupList.length; i++) {
+      nGroups = groupList[i]>nGroups ? groupList[i] : nGroups;
+    }
+
+    // first add all the groups
+    for (int i=1; i<=nGroups; i++) {
+      int gcnt = 0;
+      File[] groupFiles = new File[fileList.length];
+      for (int j=0; j<fileList.length; j++) {
+        if (i==groupList[j]) {
+          currentReader = readerList[j];
+          groupFiles[gcnt] = new File(fileList[j]);
+          gcnt++;
+        }
+      }
+      File[] tempArray = new File[gcnt];
+      for (int j=0;j<gcnt;j++) tempArray[j] = groupFiles[j];
+
+      AddData ad = new AddData(tempArray,currentReader,ri);
+      DataTreeNode[] node = ad.getNodes();
+      String[] tabName = ad.getTabNames();
+
+      for (int j=0;j<ad.getNTabs();j++) {
+        DataTreeGUI tree = new DataTreeGUI(node[j]);
+        JScrollPane treeScroller = new JScrollPane(tree);
+        treeScroller.setPreferredSize(new Dimension(400,410));
+        treeScroller.setBorder(CommonFrame.BORDER);
+        newTab(tabName[j],treeScroller);
+      }
+    }
+
+    // now add all the single files
+    for (int j=0; j<fileList.length; j++) {
+      if (groupList[j]==0) {
+        File[] singleFile = new File[1];
+        singleFile[0] = new File(fileList[j]);
+        AddData ad = new AddData(singleFile,readerList[j],ri);
+        DataTreeNode[] node = ad.getNodes();
+        String[] tabName = ad.getTabNames();
+
+        DataTreeGUI tree = new DataTreeGUI(node[0]);
+        JScrollPane treeScroller = new JScrollPane(tree);
+        treeScroller.setPreferredSize(new Dimension(400,410));
+        treeScroller.setBorder(CommonFrame.BORDER);
+        newTab(tabName[0],treeScroller);
+      }
+    }        
+
+    // Now display the window.
+    pack();
+    show();
+  }
+
+  public void actionPerformed(ActionEvent event) {
+    String command = event.getActionCommand();
+    if (command.equals("quit")) {
+      Runnable disposeFrame = new Runnable() {
+        public void run() {
+          setVisible(false);
+          dispose();
+          main.quit();
+        }
+      };
+      SwingUtilities.invokeLater(disposeFrame);
+    }
+
+
+
+    if (command.equals("open")) {
+
+      int returnVal = fChooser.showOpenDialog(this.tabbedPane);	
+      if (returnVal != JFileChooser.APPROVE_OPTION) return;
+
+      /// GET FILES ///
+
+      // when it is implemented, replace this line with:
+      // final File[] files = fChooser.getSelectedFiles();
+      final File[] files = getSelectedFiles(fChooser);
+
+      // Read in data
+      AddData ad = new AddData(files,(String)cbox.getSelectedItem(),ri);
+      DataTreeNode[] node = ad.getNodes();
+      String[] tabName = ad.getTabNames();
+        
+      /// ADD TO GUI ///
+
+      for (int j=0;j<ad.getNTabs();j++) {
+
+        DataTreeGUI tree = new DataTreeGUI(node[j]);
+        JScrollPane treeScroller = new JScrollPane(tree);
+        treeScroller.setPreferredSize(new Dimension(400,410));
+        treeScroller.setBorder(CommonFrame.BORDER);
+        newTab(tabName[j],treeScroller);
+      }
+    }
+    if (command.equals("close")) {
+      if (tabbedPane.getTabCount() > 0) {
+        int currTab = tabbedPane.getSelectedIndex();
+        tabbedPane.removeTabAt(currTab);
+      }
+    }
+  }
+
+  public void newTab(String tabName, JComponent comp) {
+      tabbedPane.addTab(tabName,comp);        
+      int etab = tabbedPane.indexOfTab("empty");
+      if (etab > -1) tabbedPane.removeTabAt(etab);
+  }
+
+  public static File[] getSelectedFiles(JFileChooser chooser) {
+    // Although JFileChooser won't give us this information,
+    // we need it...
+    Container c1 = (Container)chooser.getComponent(3);
+    JList list = null;
+    while (c1 != null) {
+      Container c = (Container)c1.getComponent(0);
+      if (c instanceof JList) {
+        list = (JList)c;
+        break;
+      }
+      c1 = c;
+    }
+    Object[] entries = list.getSelectedValues();
+    File[] files = new File[entries.length];
+    for (int k=0; k<entries.length; k++) {
+      if (entries[k] instanceof File)
+        files[k] = (File)entries[k];
+    }
+    return files;
+  }
+}

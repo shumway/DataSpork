@@ -1,0 +1,52 @@
+package analyzer.plot;
+/*
+ *
+ *
+ */
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class SubPlot extends PlotElement {
+  protected PlotDim where;
+  protected PlotDim pd;
+
+  protected PlotElement sub;
+
+  public SubPlot(PlotDim where, PlotDim pd, PlotElement sub) {
+    super();
+    init(where,pd,sub);
+  }
+
+  public SubPlot(PlotDim where, PlotDim pd, PlotElement sub, PlotElement next) {
+    super(next);
+    init(where,pd,sub);
+  }
+
+  protected void init(PlotDim where, PlotDim pd, PlotElement sub) {
+    this.where=where; this.pd=pd;
+    this.sub = sub;
+    sub.setPrev(this);
+  }
+
+  public void paint(Graphics g) {
+    PlotDim old_pd = prev.getPlotDim(this);
+    pd.imin = old_pd.i(where.xmin);
+    pd.imax = old_pd.i(where.xmax);
+    pd.jmin = old_pd.j(where.ymin);
+    pd.jmax = old_pd.j(where.ymax);
+    pd.scalex = (pd.imax-pd.imin)/(pd.xmax-pd.xmin);
+    pd.scaley = (pd.jmax-pd.jmin)/(pd.ymax-pd.ymin);
+    if (sub!=null) sub.paint(g);
+    super.paint(g);
+  }
+  
+  public PlotDim getPlotDim(PlotElement e) {
+    if (e==sub) {
+      return pd;
+    } else {
+      return super.getPlotDim(this);
+    }
+  }
+}
