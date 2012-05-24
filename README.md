@@ -20,4 +20,9 @@ years. John Shumway maintains the package, mostly for student use.
 Running ant in the home directory builds the jar file, which can
 be run with 
 
-java dataspork.jar
+java -jar dataspork.jar
+
+## Notes
+
+This program is OLD! It needs to be compiled with -soruce 1.4, as specified
+in the ant file. I hope to fix that soon.
