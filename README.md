@@ -15,10 +15,13 @@ by John Shumway for Prof. David Ceperley's research group and materials
 simulation course.  Erik Draeger continued development for the next two
 years. John Shumway maintains the package, mostly for student use.
 
-## Build and run instructions.
+## Build and run instructions
 
-Running ant in the home directory builds the jar file, which can
-be run with 
+You can download the jar file directly for github:
+https://github.com/downloads/shumway/DataSpork/dataspork.jar
+
+If you wish to build from source, running ant in the home directory builds 
+the jar file, which can be run with 
 
 java -jar dataspork.jar
 
