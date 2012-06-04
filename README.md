@@ -21,9 +21,16 @@ You can download the jar file directly for github:
 https://github.com/downloads/shumway/DataSpork/dataspork.jar
 
 If you wish to build from source, running ant in the home directory builds 
-the jar file, which can be run with 
+the jar file.
+
+The jar file can be run with:
 
 java -jar dataspork.jar
+
+You may find it handy to set this as a UNIX alias using the full path to
+the jar file,
+
+alias ds='java -jar $HOME/bin/dataspork.jar'
 
 ## Notes
 
